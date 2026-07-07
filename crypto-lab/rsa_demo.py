@@ -1,20 +1,3 @@
-"""
-实验1-2：RSA非对称加密算法 —— 加密与解密
-
-RSA 基于大整数分解的数学难题，使用一对密钥：
-- 公钥 (n, e): 用于加密，可公开分享
-- 私钥 (n, d): 用于解密，必须保密
-
-本实验使用 2048-bit RSA 密钥（安全强度约 112 bits），
-搭配 OAEP（Optimal Asymmetric Encryption Padding）填充方案，
-避免教科书式 RSA 的已知安全问题。
-
-关键参数说明：
-  - 密钥长度: 2048 bits —— 当前广泛采用的安全级别
-  - 公钥指数 e: 65537 —— 最常用的选择，兼顾安全与效率
-  - 填充方案: OAEP with SHA-256 —— 防止选择密文攻击（CCA）
-"""
-
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes, serialization
 
@@ -34,15 +17,6 @@ def print_separator(title: str) -> None:
 # ─── RSA 密钥生成 ─────────────────────────────────────────
 
 def generate_rsa_keypair(key_size: int = 2048):
-    """
-    生成 RSA 公私钥对。
-
-    参数:
-        key_size: 密钥长度（bits），默认 2048
-
-    返回:
-        (private_key, public_key)
-    """
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=key_size,
@@ -79,15 +53,6 @@ def rsa_encrypt(plaintext: str, public_key) -> bytes:
     """
     使用 RSA 公钥加密明文。
 
-    参数:
-        plaintext: 明文字符串
-        public_key: RSA 公钥对象
-
-    返回:
-        密文字节
-
-    注意: RSA-2048 + OAEP(SHA-256) 最多加密 190 bytes 数据，
-    因此 RSA 通常只用于加密对称密钥，而非直接加密大量数据。
     """
     ciphertext = public_key.encrypt(
         plaintext.encode("utf-8"),
@@ -104,12 +69,6 @@ def rsa_decrypt(ciphertext: bytes, private_key) -> str:
     """
     使用 RSA 私钥解密密文。
 
-    参数:
-        ciphertext: 密文字节
-        private_key: RSA 私钥对象
-
-    返回:
-        明文字符串
     """
     plaintext_bytes = private_key.decrypt(
         ciphertext,

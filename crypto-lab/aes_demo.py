@@ -1,16 +1,3 @@
-"""
-实验1-1：AES对称加密算法 —— 加密与解密
-
-使用 AES-256（CBC模式）对明文进行加密和解密。
-- 密钥长度: 256 bits（32 bytes）
-- 分组模式: CBC（Cipher Block Chaining）
-- 填充方式: PKCS7
-
-AES 是美国国家标准与技术研究院（NIST）采纳的对称加密标准，
-广泛用于保护敏感数据。CBC 模式通过引入随机 IV（初始化向量）
-使相同的明文在不同次加密中产生不同的密文。
-"""
-
 import os
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding

@@ -1,34 +1,3 @@
-"""
-实验2：混合加密实验 —— RSA密钥封装 + AES数据加密
-
-场景模拟：
-  Alice 与 Bob 之间需要安全传输一条消息。
-
-流程：
-  1. Alice 生成 RSA-2048 公私钥对，将公钥发送给 Bob
-  2. Bob:
-     a) 随机生成一个 AES-256 会话密钥（Session Key）
-     b) 用 AES-256-GCM 加密明文（数据封装 —— 高效）
-     c) 用 Alice 的 RSA 公钥加密该 AES 会话密钥（密钥封装 —— 安全）
-     d) 将 {加密的会话密钥, IV, 密文, Tag} 发送给 Alice
-  3. Alice:
-     a) 用 RSA 私钥解密出 AES 会话密钥
-     b) 用 AES 会话密钥解密出明文
-
-设计说明：
-  - 密钥封装: RSA-2048 + OAEP(SHA-256)
-    解决对称密钥的安全分发问题
-  - 数据封装: AES-256-GCM（Galois/Counter Mode）
-    GCM 模式同时提供机密性和完整性认证（AEAD），
-    防篡改且性能优于 CBC+HMAC 组合
-  - 会话密钥: 一次性随机生成，用完即弃（前向安全性考量）
-
-参考资料：
-  - RFC 8017: PKCS #1 v2.2 (RSA-OAEP)
-  - NIST SP 800-38D: GCM mode
-  - TLS 1.3 中广泛采用类似的混合加密模式
-"""
-
 import os
 from cryptography.hazmat.primitives.asymmetric import rsa, padding as asym_padding
 from cryptography.hazmat.primitives import hashes, serialization
@@ -55,10 +24,6 @@ class Alice:
     """
     Alice —— 消息接收方
 
-    职责:
-      1. 生成 RSA 公私钥对
-      2. 发布公钥（或证书）
-      3. 用自己的私钥解密收到的消息
     """
 
     def __init__(self, key_size: int = 2048):
@@ -84,13 +49,6 @@ class Alice:
         """
         解密 Bob 发来的混合加密消息。
 
-        参数:
-            encrypted_key: RSA 加密的 AES 会话密钥
-            nonce: AES-GCM 使用的 nonce
-            ciphertext: AES-GCM 加密的密文（含认证标签）
-
-        返回:
-            明文字符串
         """
         # 1. RSA 解密 → 获取 AES 会话密钥
         aes_key = self._private_key.decrypt(
@@ -128,16 +86,7 @@ class Bob:
 
     def encrypt_hybrid_message(self, plaintext: str,
                                 alice_public_key) -> dict:
-        """
-        执行混合加密。
-
-        参数:
-            plaintext: 要发送的明文
-            alice_public_key: Alice 的 RSA 公钥
-
-        返回:
-            dict: {encrypted_key, nonce, ciphertext}
-        """
+     
         # 1. 生成一次性 AES-256 会话密钥
         aes_key = AESGCM.generate_key(bit_length=256)  # 256 bits
         print(f"   🎲 生成一次性 AES-256 会话密钥")
@@ -145,10 +94,8 @@ class Bob:
 
         # 2. AES-GCM 加密明文（数据封装）
         aesgcm = AESGCM(aes_key)
-        nonce = os.urandom(12)  # GCM 推荐 96-bit nonce
-        # 将明文编码为 bytes 再加密
+        nonce = os.urandom(12)  
         plaintext_bytes = plaintext.encode("utf-8")
-        # AESGCM.encrypt 返回 ciphertext + 16-byte 认证标签（自动拼接）
         ciphertext = aesgcm.encrypt(nonce, plaintext_bytes, None)
         print(f"   🔒 AES-GCM 加密完成")
         print(f"      nonce: {bytes_to_hex(nonce)}")
@@ -237,19 +184,6 @@ def demo_hybrid() -> None:
     print(f"\n{'─'*60}")
     print(f"  算法与参数总结")
     print(f"{'─'*60}")
-    print(f"""
-    ┌─────────────────┬──────────────────────────────┐
-    │ 组件            │ 算法 / 参数                  │
-    ├─────────────────┼──────────────────────────────┤
-    │ 密钥封装 (KEM)  │ RSA-2048 + OAEP(SHA-256)     │
-    │ 数据封装 (DEM)  │ AES-256-GCM (AEAD)           │
-    │ RSA 密钥长度     │ 2048 bits                    │
-    │ AES 密钥长度     │ 256 bits                     │
-    │ 公钥指数 e       │ 65537                        │
-    │ GCM Nonce        │ 96 bits (随机生成)            │
-    │ 认证标签         │ 128 bits (GCM 自动附加)       │
-    └─────────────────┴──────────────────────────────┘
-    """)
 
 
 if __name__ == "__main__":
